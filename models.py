@@ -14,6 +14,8 @@ class VAE(nn.Module):
         if conditional:
             assert num_labels > 0
 
+
+
         assert type(encoder_layer_sizes) == list
         assert type(latent_size) == int
         assert type(decoder_layer_sizes) == list

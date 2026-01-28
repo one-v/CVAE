@@ -11,7 +11,6 @@ class VAE(nn.Module):
 
         super().__init__()
 
-
         if conditional:
             assert num_labels > 0
 

@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from utils import idx2onehot
-
 
 class VAE(nn.Module):
 
@@ -13,8 +11,6 @@ class VAE(nn.Module):
 
         if conditional:
             assert num_labels > 0
-
-
 
         assert type(encoder_layer_sizes) == list
         assert type(latent_size) == int
@@ -30,7 +26,7 @@ class VAE(nn.Module):
     def forward(self, x, c=None):
 
         if x.dim() > 2:
-            x = x.view(-1, 28 * 28)
+            x = x.view(-1, 6)
 
         means, log_var = self.encoder(x, c)
         z = self.reparameterize(means, log_var)
@@ -75,7 +71,7 @@ class Encoder(nn.Module):
     def forward(self, x, c=None):
 
         if self.conditional:
-            c = idx2onehot(c, n=10)
+            # 直接将 c 作为连续值拼接
             x = torch.cat((x, c), dim=-1)
 
         x = self.MLP(x)
@@ -106,12 +102,12 @@ class Decoder(nn.Module):
             if i + 1 < len(layer_sizes):
                 self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
             else:
-                self.MLP.add_module(name="sigmoid", module=nn.Sigmoid())
+                self.MLP.add_module(name="linear", module=nn.Identity())
 
     def forward(self, z, c):
 
         if self.conditional:
-            c = idx2onehot(c, n=10)
+            # 直接将 c 作为连续值拼接
             z = torch.cat((z, c), dim=-1)
 
         x = self.MLP(z)

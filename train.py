@@ -1,14 +1,8 @@
 import os
 import time
 import torch
-import argparse
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from torchvision import transforms
-from torchvision.datasets import MNIST
 from torch.utils.data import DataLoader
-from collections import defaultdict
+from utils import create_dataset, model_list, get_args
 
 from models import VAE
 
@@ -16,45 +10,99 @@ from models import VAE
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
-def main(args):
+def train(args, train_dataset):
+    # 设置随机种子，确保结果可复现
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(args.seed)
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    ts = time.time()
+    # 创建数据集加载器，获取数据集的输入特征维度和输出标签维度
+    data_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    dataset = MNIST(
-        root='data', train=True, transform=transforms.ToTensor(),
-        download=True)
-    data_loader = DataLoader(
-        dataset=dataset, batch_size=args.batch_size, shuffle=True)
-
+    # 定义损失函数，使用 Smooth L1  + KLD 作为最终损失函数
     def loss_fn(recon_x, x, mean, log_var):
-        BCE = torch.nn.functional.binary_cross_entropy(
-            recon_x.view(-1, 28 * 28), x.view(-1, 28 * 28), reduction='sum')
+        # 使用 Smooth L1  + KLD 作为最终损失函数
+        SmoothL1 = torch.nn.functional.smooth_l1_loss(recon_x, x, reduction='sum')
         KLD = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
 
-        return (BCE + KLD) / x.size(0)
+        return (SmoothL1 + KLD) / x.size(0)
 
+    # 初始化模型，使用自定义 VAE 模型
     vae = VAE(
         encoder_layer_sizes=args.encoder_layer_sizes,
         latent_size=args.latent_size,
         decoder_layer_sizes=args.decoder_layer_sizes,
         conditional=args.conditional,
-        num_labels=10 if args.conditional else 0).to(device)
+        num_labels=6 if args.conditional else 0).to(device)
 
+    # 选择 Adam 优化器
     optimizer = torch.optim.Adam(vae.parameters(), lr=args.learning_rate)
 
-    logs = defaultdict(list)
-
+    # 开始训练
     for epoch in range(args.epochs):
-
-        tracker_epoch = defaultdict(lambda: defaultdict(dict))
-
+        # 定义变量，记录每次训练的损失值，训练批次数
+        total_loss, batch_num = 0.0, 0
+        # 定义变量，表示训练开始的时间
+        start_time = time.time()
         for iteration, (x, y) in enumerate(data_loader):
+            # 切换模型（状态）
+            vae.train()
+            x, y = x.to(device), y.to(device)
+            # 判断使用VAE还是CVAE
+            if args.conditional:
+                recon_x, mean, log_var, z = vae(x, y)
+            else:
+                recon_x, mean, log_var, z = vae(x)
 
+            # 计算损失值
+            loss = loss_fn(recon_x, x, mean, log_var)
+
+            # 梯度清零、反向传播、参数更新
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # 累加损失值：把本轮的每批次的平均损失累加起来 第1批次的平均损失 + 第2批次的平均损失 + ...
+            total_loss += loss.item()
+            batch_num += 1
+        # 至此，本轮训练结束，打印训练信息
+        print(f"第{epoch + 1}轮\t\ttime:{time.time() - start_time:.2f}\t\t损失值：{total_loss / batch_num:.6f}")
+
+    # 多轮训练结束，保存模型（参数） 后缀名用:pth,pkl,pickle即可
+    # 参1：模型对象的参数（权重矩阵，偏置矩阵） 参2：模型保存的文件名
+    torch.save(vae.state_dict(),
+               f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth")
+
+
+def evaluate(args, test_dataset):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # 初始化自定义 VAE 模型
+    vae = VAE(
+        encoder_layer_sizes=args.encoder_layer_sizes,
+        latent_size=args.latent_size,
+        decoder_layer_sizes=args.decoder_layer_sizes,
+        conditional=args.conditional,
+        num_labels=6 if args.conditional else 0).to(device)
+
+    # 创建数据集加载器，获取数据集的输入特征维度和输出标签维度
+    data_loader = DataLoader(
+        dataset=test_dataset, batch_size=args.batch_size, shuffle=True)
+
+    # 加载模型参数
+    vae.load_state_dict(torch.load(
+        f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth"))
+    # 3、切换模型（状态）
+    vae.eval()
+
+    # 定义变量，记录测试集上的MAE和MSE
+    total_mae = 0.0
+    total_mse = 0.0
+    total_samples = 0
+
+    # 遍历测试集
+    with torch.no_grad():
+        for iteration, (x, y) in enumerate(data_loader):
             x, y = x.to(device), y.to(device)
 
             if args.conditional:
@@ -62,77 +110,45 @@ def main(args):
             else:
                 recon_x, mean, log_var, z = vae(x)
 
-            for i, yi in enumerate(y):
-                id = len(tracker_epoch)
-                tracker_epoch[id]['x'] = z[i, 0].item()
-                tracker_epoch[id]['y'] = z[i, 1].item()
-                tracker_epoch[id]['label'] = yi.item()
+            # 计算MAE和MSE
+            mae = torch.nn.functional.l1_loss(recon_x, x, reduction='sum')
+            mse = torch.nn.functional.mse_loss(recon_x, x, reduction='sum')
 
-            loss = loss_fn(recon_x, x, mean, log_var)
+            total_mae += mae.item()
+            total_mse += mse.item()
+            total_samples += x.size(0)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    # 计算平均MAE和MSE
+    avg_mae = total_mae / total_samples
+    avg_mse = total_mse / total_samples
 
-            logs['loss'].append(loss.item())
-
-            if iteration % args.print_every == 0 or iteration == len(data_loader) - 1:
-                print("Epoch {:02d}/{:02d} Batch {:04d}/{:d}, Loss {:9.4f}".format(
-                    epoch, args.epochs, iteration, len(data_loader) - 1, loss.item()))
-
-                if args.conditional:
-                    c = torch.arange(0, 10).long().unsqueeze(1).to(device)
-                    z = torch.randn([c.size(0), args.latent_size]).to(device)
-                    x = vae.inference(z, c=c)
-                else:
-                    z = torch.randn([10, args.latent_size]).to(device)
-                    x = vae.inference(z)
-
-                plt.figure()
-                plt.figure(figsize=(5, 10))
-                for p in range(10):
-                    plt.subplot(5, 2, p + 1)
-                    if args.conditional:
-                        plt.text(
-                            0, 0, "c={:d}".format(c[p].item()), color='black',
-                            backgroundcolor='white', fontsize=8)
-                    plt.imshow(x[p].view(28, 28).cpu().data.numpy())
-                    plt.axis('off')
-
-                if not os.path.exists(os.path.join(args.fig_root, str(ts))):
-                    if not (os.path.exists(os.path.join(args.fig_root))):
-                        os.mkdir(os.path.join(args.fig_root))
-                    os.mkdir(os.path.join(args.fig_root, str(ts)))
-
-                plt.savefig(
-                    os.path.join(args.fig_root, str(ts),
-                                 "E{:d}I{:d}.png".format(epoch, iteration)),
-                    dpi=300)
-                plt.clf()
-                plt.close('all')
-
-        df = pd.DataFrame.from_dict(tracker_epoch, orient='index')
-        g = sns.lmplot(
-            x='x', y='y', hue='label', data=df.groupby('label').head(100),
-            fit_reg=False, legend=True)
-        g.savefig(os.path.join(
-            args.fig_root, str(ts), "E{:d}-Dist.png".format(epoch)),
-            dpi=300)
+    # 打印结果
+    print(f"测试结果:")
+    print(f"平均绝对误差 (MAE): {avg_mae:.6f}")
+    print(f"均方误差 (MSE): {avg_mse:.6f}")
+    print(f"均方根误差 (RMSE): {avg_mse ** 0.5:.6f}")
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--learning_rate", type=float, default=0.001)
-    parser.add_argument("--encoder_layer_sizes", type=list, default=[784, 256])
-    parser.add_argument("--decoder_layer_sizes", type=list, default=[256, 784])
-    parser.add_argument("--latent_size", type=int, default=2)
-    parser.add_argument("--print_every", type=int, default=100)
-    parser.add_argument("--fig_root", type=str, default='figs')
-    parser.add_argument("--conditional", action='store_true')
-
-    args = parser.parse_args()
-
-    main(args)
+    # 1、创建数据集，获取数据集的输入特征维度和输出标签维度
+    train_dataset, test_dataset, input_dim, output_dim = create_dataset()
+    # 2、获取模型列表
+    train_list = model_list()
+    # 3、定义变量，记录当前状态是训练还是测试
+    state_train_test = False
+    # 4、遍历模型列表，批量训练模型
+    for train_dict in train_list:
+        # 5、判断是否训练该模型
+        if not train_dict["if_train"]:
+            continue
+        # 6、获取命令行参数
+        args = get_args(train_dict)
+        # 7、输出当前的训练模型名
+        print(
+            f"当前模型：CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}")
+        # 8、通过状态，判断当前是训练还是测试
+        if state_train_test:
+            train(args, train_dataset)
+        else:
+            evaluate(args, test_dataset)
+    print("所有模型训练已完成") if state_train_test else print("所有模型测试已完成")

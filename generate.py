@@ -23,7 +23,7 @@ def generate(args):
         num_labels=6 if args.conditional else 0).to(device)
 
     # 加载训练好的模型参数
-    model_path = f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.latent_size}_{args.encoder_layer_sizes}_{args.decoder_layer_sizes}.pth"
+    model_path = f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth"
 
     # 确保model目录与模型文件存在
     if not os.path.exists('./model'):
@@ -59,12 +59,15 @@ def generate(args):
                 # 示例：生成条件c: 6个光学特性
                 nums_1 = [4.79721214, 5.885984774, 1.184874056, 0.491146023, 0.293180056, 1.384228451]
                 nums_2 = [3.500724077, 4.191257477, 0.796704531, 0.35748297, -0.005191585, 0.483815134]
+                nums_3 = [8.567868233, 12.92377758, 5.244325638, 3.140165329, 1.899796963, 0.822457731]
 
                 # 转换为PyTorch张量（CPU设备，float32类型）
                 # 不做反归一化处理
                 # c_normalized = y_scaler.inverse_transform(np.array(nums, dtype=np.float32).reshape(1, -1))
                 c = torch.tensor(nums_1, dtype=torch.float32).unsqueeze(0).to(device)
                 generate_x = vae.inference(z, c)
+                generate_x[:,0] = generate_x[:,0]/100   # 第0列：n1还原
+                generate_x[:,1] = generate_x[:,1]/100   # 第1列：n2还原
                 # recon_x_original = x_scaler.inverse_transform(recon_x.cpu().numpy())
                 generated_solutions.append({
                     '光学特性参数': c[0].tolist(),
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     # 获取模型列表
     train_list = model_list()
     # 设置生成解的个数
-    num_samples = 10
+    num_samples = 50
     for train_dict in train_list:
         # 判断是否训练该模型
         if not train_dict["if_train"]:

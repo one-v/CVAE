@@ -74,22 +74,20 @@ def model_list():
     # 模型大概在10000轮之后已经过拟合，所以轮次暂时设置在5000左右即可
     model_list = [
     # ------------- 原有经典推荐 -------------
-    {"encoder_layer_sizes": [6, 256, 160, 80], "decoder_layer_sizes": [80, 160, 256, 6], "latent_size": 14, "learning_rate": 0.0008, "epochs": 10000, "batch_size": 16, "if_train": False},
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 10, "learning_rate": 0.001, "epochs": 10000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 12, "learning_rate": 0.001, "epochs": 10000, "batch_size": 16, "if_train": False},
+    {"encoder_layer_sizes": [6, 256, 160, 80], "decoder_layer_sizes": [80, 160, 256, 6], "latent_size": 14, "learning_rate": 0.0008, "epochs": 10000, "batch_size": 16, "if_train": True},
+    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 10, "learning_rate": 0.001, "epochs": 10000, "batch_size": 32, "if_train": True},
+    {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 12, "learning_rate": 0.001, "epochs": 10000, "batch_size": 16, "if_train": True},
     # ------------- 精度优先 -------------
-    {"encoder_layer_sizes": [6, 128, 64, 32], "decoder_layer_sizes": [32, 64, 128, 6], "latent_size": 10, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 256, 160, 64], "decoder_layer_sizes": [64, 160, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
+    {"encoder_layer_sizes": [6, 128, 64, 32], "decoder_layer_sizes": [32, 64, 128, 6], "latent_size": 10, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+    {"encoder_layer_sizes": [6, 256, 160, 64], "decoder_layer_sizes": [64, 160, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
     # ------------- 精度+多样性均衡（核心） -------------
-    {"encoder_layer_sizes": [6, 256, 128, 80], "decoder_layer_sizes": [80, 128, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 256, 140, 70], "decoder_layer_sizes": [70, 140, 256, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
+    {"encoder_layer_sizes": [6, 256, 128, 80], "decoder_layer_sizes": [80, 128, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+    {"encoder_layer_sizes": [6, 256, 140, 70], "decoder_layer_sizes": [70, 140, 256, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
     # ------------- 多样性优先（解决解单一） -------------
-    {"encoder_layer_sizes": [6, 320, 180, 90], "decoder_layer_sizes": [90, 180, 320, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 320, 200, 100], "decoder_layer_sizes": [100, 200, 320, 6], "latent_size": 16, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": False},
+    {"encoder_layer_sizes": [6, 320, 180, 90], "decoder_layer_sizes": [90, 180, 320, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+    {"encoder_layer_sizes": [6, 320, 200, 100], "decoder_layer_sizes": [100, 200, 320, 6], "latent_size": 16, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
     # 自定义结构
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 12, "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 14, "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": False},
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 16, "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": False},
+    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 12, "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": True},
     
     {"encoder_layer_sizes": [6, 256, 128], "decoder_layer_sizes": [128, 256, 6], "latent_size": 6, "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},
     {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 6, "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},    

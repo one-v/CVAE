@@ -23,8 +23,8 @@ def create_dataset():
     # 3、切分训练集和测试集
     # 参1：特征 参2：标签 参3：测试集所占比例 参4：随机种子
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=32)
-    x_train[['n1', 'n2']] = x_train[['n1', 'n2']]*100
-    x_test[['n1', 'n2']] = x_test[['n1', 'n2']]*100
+    x_train[['n1', 'n2']] = x_train[['n1', 'n2']] * 100
+    x_test[['n1', 'n2']] = x_test[['n1', 'n2']] * 100
 
     # 先不对x,y做标准化处理
     # x_scaler = StandardScaler()
@@ -73,25 +73,38 @@ def model_list():
     # 添加模型开关if_train，用于控制是否训练该模型
     # 模型大概在10000轮之后已经过拟合，所以轮次暂时设置在5000左右即可
     model_list = [
-    # ------------- 原有经典推荐 -------------
-    {"encoder_layer_sizes": [6, 256, 160, 80], "decoder_layer_sizes": [80, 160, 256, 6], "latent_size": 14, "learning_rate": 0.0008, "epochs": 10000, "batch_size": 16, "if_train": True},
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 10, "learning_rate": 0.001, "epochs": 10000, "batch_size": 32, "if_train": True},
-    {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 12, "learning_rate": 0.001, "epochs": 10000, "batch_size": 16, "if_train": True},
-    # ------------- 精度优先 -------------
-    {"encoder_layer_sizes": [6, 128, 64, 32], "decoder_layer_sizes": [32, 64, 128, 6], "latent_size": 10, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    {"encoder_layer_sizes": [6, 256, 160, 64], "decoder_layer_sizes": [64, 160, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    # ------------- 精度+多样性均衡（核心） -------------
-    {"encoder_layer_sizes": [6, 256, 128, 80], "decoder_layer_sizes": [80, 128, 256, 6], "latent_size": 12, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    {"encoder_layer_sizes": [6, 256, 140, 70], "decoder_layer_sizes": [70, 140, 256, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    # ------------- 多样性优先（解决解单一） -------------
-    {"encoder_layer_sizes": [6, 320, 180, 90], "decoder_layer_sizes": [90, 180, 320, 6], "latent_size": 14, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    {"encoder_layer_sizes": [6, 320, 200, 100], "decoder_layer_sizes": [100, 200, 320, 6], "latent_size": 16, "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
-    # 自定义结构
-    {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 12, "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": True},
-    
-    {"encoder_layer_sizes": [6, 256, 128], "decoder_layer_sizes": [128, 256, 6], "latent_size": 6, "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},
-    {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 6, "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},    
-    {"encoder_layer_sizes": [6, 256, 64], "decoder_layer_sizes": [64, 256, 6], "latent_size": 6, "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True}
+        # ------------- 原有经典推荐 -------------
+        {"encoder_layer_sizes": [6, 256, 160, 80], "decoder_layer_sizes": [80, 160, 256, 6], "latent_size": 14,
+         "learning_rate": 0.0008, "epochs": 10000, "batch_size": 16, "if_train": True},
+        {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 10,
+         "learning_rate": 0.001, "epochs": 10000, "batch_size": 32, "if_train": True},
+        {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 12,
+         "learning_rate": 0.001, "epochs": 10000, "batch_size": 16, "if_train": True},
+        # ------------- 精度优先 -------------
+        {"encoder_layer_sizes": [6, 128, 64, 32], "decoder_layer_sizes": [32, 64, 128, 6], "latent_size": 10,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        {"encoder_layer_sizes": [6, 256, 160, 64], "decoder_layer_sizes": [64, 160, 256, 6], "latent_size": 12,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        # ------------- 精度+多样性均衡（核心） -------------
+        {"encoder_layer_sizes": [6, 256, 128, 80], "decoder_layer_sizes": [80, 128, 256, 6], "latent_size": 12,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        {"encoder_layer_sizes": [6, 256, 140, 70], "decoder_layer_sizes": [70, 140, 256, 6], "latent_size": 14,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        # ------------- 多样性优先（解决解单一） -------------
+        {"encoder_layer_sizes": [6, 320, 180, 90], "decoder_layer_sizes": [90, 180, 320, 6], "latent_size": 14,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        {"encoder_layer_sizes": [6, 320, 200, 100], "decoder_layer_sizes": [100, 200, 320, 6], "latent_size": 16,
+         "learning_rate": 0.005, "epochs": 8000, "batch_size": 32, "if_train": True},
+        # 自定义结构
+        {"encoder_layer_sizes": [6, 128, 64], "decoder_layer_sizes": [64, 128, 6], "latent_size": 12,
+         "learning_rate": 0.01, "epochs": 5000, "batch_size": 32, "if_train": True},
+
+        {"encoder_layer_sizes": [6, 256, 128], "decoder_layer_sizes": [128, 256, 6], "latent_size": 6,
+         "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},
+        {"encoder_layer_sizes": [6, 256, 128, 64], "decoder_layer_sizes": [64, 128, 256, 6], "latent_size": 6,
+         "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True},
+        {"encoder_layer_sizes": [6, 256, 64], "decoder_layer_sizes": [64, 256, 6], "latent_size": 6,
+         "learning_rate": 0.001, "epochs": 5000, "batch_size": 64, "if_train": True}
     ]
     return model_list
 

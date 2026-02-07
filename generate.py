@@ -11,9 +11,9 @@ from models import VAE
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# 用来生成解的函数
-def generate(args,c):
 
+# 用来生成解的函数
+def generate(args, c):
     # 创建VAE模型实例
     vae = VAE(
         encoder_layer_sizes=args.encoder_layer_sizes,
@@ -46,9 +46,9 @@ def generate(args,c):
             # 如果是条件VAE，需要提供条件c
             if args.conditional:
                 generate_x = vae.inference(z, c)
-                
-                generate_x[:,0] = generate_x[:,0]/100   # 第0列：n1还原
-                generate_x[:,1] = generate_x[:,1]/100   # 第1列：n2还原
+
+                generate_x[:, 0] = generate_x[:, 0] / 100  # 第0列：n1还原
+                generate_x[:, 1] = generate_x[:, 1] / 100  # 第1列：n2还原
                 generated_solutions.append(generate_x[0].tolist())
             else:
                 generate_x = vae.inference(z)
@@ -68,15 +68,15 @@ if __name__ == '__main__':
     # 设置要生成解的样本索引
     index = 5
     data = pd.read_excel('./dataset/Δneff_comsol+网络.xlsx')
-    data = data.iloc[index,6:-1].astype(np.float32)
+    data = data.iloc[index, 6:-1].astype(np.float32)
     data = torch.tensor(data, dtype=torch.float32).unsqueeze(0).to(device)
     for train_dict in train_list:
         # 判断是否训练该模型
         if not train_dict["if_train"]:
             continue
         # 解析命令行参数
-        args = get_args(train_dict,num_samples)
+        args = get_args(train_dict, num_samples)
         print(
             f"当前模型：CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}")
         # 从所有模型生成解
-        generate(args,data)
+        generate(args, data)

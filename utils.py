@@ -18,13 +18,13 @@ def create_dataset():
     # 2、获取x特征列和y标签列同时把特征列转成浮点型，一定要转成浮点型，因为在神经网络中，计算都是浮点型   
     # x：6个光学特性（作为输入）  y：6个结构参数（作为输出）
     x = data.iloc[:, :6].astype(np.float32)  # 光学结构参数即作为输入，也作为输出
+    y = data.iloc[:, 6:].astype(np.float32)  # 光学特性参数作为条件输入
     # 对x的前两列乘以100倍
     x.iloc[:, :2] = x.iloc[:, :2] * 100
-    y = data.iloc[:, 6:].astype(np.float32)  # 光学特性参数作为条件输入
-
     # 3、切分训练集和测试集
     # 参1：特征 参2：标签 参3：测试集所占比例 参4：随机种子
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=32)
+    # 未生效
     x = x*10000
     y = y*10000
 
@@ -134,5 +134,5 @@ def model_list():
 
 
 if __name__ == '__main__':
-    # create_dataset()
-    model_list()
+    create_dataset()
+    # model_list()

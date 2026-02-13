@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练日志查看器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .refresh-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+        .log-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 800px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status-bar {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .status-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">训练日志查看器</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">实时监控模型训练进度</p>
+            <button class="refresh-btn" onclick="loadLogData()">
+                刷新数据
+            </button>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">日志行数:</span>
+                <span class="status-value" id="lineCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">最后更新:</span>
+                <span class="status-value" id="lastUpdate">--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">自动刷新:</span>
+                <span class="status-value">30秒</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            正在加载训练日志...
+        </div>
+
+        <div id="logContainer" class="log-content" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function loadLogData() {
+            try {
+                const response = await fetch('./training_log.txt');
+                if (!response.ok) {
+                    throw new Error('无法加载日志文件');
+                }
+                const logData = await response.text();
+                displayLogData(logData);
+            } catch (error) {
+                console.error('加载日志失败:', error);
+                document.getElementById('loading').innerHTML = 
+                    `<div style="color: #dc3545; font-weight: bold;">无法加载训练日志: ${error.message}</div>`;
+                document.getElementById('logContainer').style.display = 'none';
+            }
+        }
+
+        function displayLogData(logData) {
+            document.getElementById('loading').style.display = 'none';
+            
+            if (!logData || logData.trim() === '') {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').innerHTML = 
+                    '<div style="color: #999;">暂无训练日志数据</div>';
+                document.getElementById('logContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('logContainer').style.display = 'block';
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+
+            const lines = logData.split('\n');
+            document.getElementById('lineCount').textContent = lines.length;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+
+                const logLine = document.createElement('div');
+                logLine.style.marginBottom = '5px';
+                logLine.style.padding = '3px 0';
+                logLine.style.borderBottom = '1px solid #e9ecef';
+                logLine.textContent = line;
+
+                logContainer.appendChild(logLine);
+            });
+
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        window.onload = function() {
+            loadLogData();
+            setInterval(loadLogData, 30000);
+        };
+    </script>
+</body>
+</html>

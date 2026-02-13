@@ -31,7 +31,7 @@ def generate(args, c):
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"模型文件不存在: {model_path}，请先运行train.py训练模型")
     # 加载模型参数
-    vae.load_state_dict(torch.load(model_path))
+    vae.load_state_dict(torch.load(model_path, weights_only=True))
     # 切换模型状态
     vae.eval()
 

@@ -84,8 +84,12 @@ if __name__ == '__main__':
     # 设置要生成解的样本索引
     index = 3000
     data = pd.read_excel('./dataset/Δneff_comsol+网络.xlsx')
+    orign_data = torch.tensor(data.iloc[index, :6].astype(np.float32)).to(device)
     data = data.iloc[index, 6:-1].astype(np.float32)
     data = torch.tensor(data, dtype=torch.float32).unsqueeze(0).to(device)
+    #输入获取生成解的个数
+    num_samples = int(input("请输入要生成的解的个数："))
+    print(f"当前的光学特性参数为：{data}\n原数据集中对应的光纤结构参数为：{orign_data}")
     for train_dict in train_list:
         # 判断是否训练该模型
         if not train_dict["if_train"]:
@@ -93,13 +97,13 @@ if __name__ == '__main__':
         # 解析命令行参数
         args = get_args(train_dict, num_samples)
         print(
-            f"当前模型：CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}")
+            f"当前模型为：CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}")
         # 从所有模型生成解
         generated_solutions = generate(args, data)
         # 过滤有用解
         useful_data = filter_useful_data(generated_solutions)
         # 打印有用解
-        print(f"有用解数量: {len(useful_data)}")
+        print(f"初步过滤后得到的有用解数量: {len(useful_data)}")
         for i, solution in enumerate(useful_data):
-            print(f"第{i + 1}组: {solution}")
+            print(f"第{i + 1}组解:\t {solution}")
         time.sleep(1)

@@ -91,7 +91,8 @@ def evaluate(args, test_dataset):
 
     # 加载模型参数
     vae.load_state_dict(torch.load(
-        f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth"))
+        f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth",
+        weights_only=True))
     # 3、切换模型（状态）
     vae.eval()
 
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     # 2、获取模型列表
     train_list = model_list()
     # 3、定义变量，记录当前状态是训练还是测试
-    state_train_test = False
+    state_train_test = True
     # 4、遍历模型列表，批量训练模型
     for train_dict in train_list:
         # 5、判断是否训练该模型

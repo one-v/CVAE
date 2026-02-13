@@ -9,6 +9,27 @@ from models import VAE
 # 解决 OpenMP 库重复初始化问题
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
+# 日志文件路径
+LOG_FILE = './training_log.txt'
+
+# 确保日志文件存在
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, 'w', encoding='utf-8') as f:
+        f.write(f"训练日志开始时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+
+def log_message(message):
+    """记录日志信息到txt文件"""
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    log_entry = f"[{timestamp}] {message}\n"
+
+    # 打印到控制台
+    print(message)
+
+    # 写入日志文件
+    with open(LOG_FILE, 'a', encoding='utf-8') as f:
+        f.write(log_entry)
+
 
 def train(args, train_dataset):
     # 设置随机种子，确保结果可复现
@@ -38,7 +59,9 @@ def train(args, train_dataset):
 
     # 选择 Adam 优化器
     optimizer = torch.optim.Adam(vae.parameters(), lr=args.learning_rate)
-
+    log_loss = 0.0
+    log_batch_num = 0
+    log_start_time = time.time()
     # 开始训练
     for epoch in range(args.epochs):
         # 定义变量，记录每次训练的损失值，训练批次数
@@ -66,13 +89,35 @@ def train(args, train_dataset):
             # 累加损失值：把本轮的每批次的平均损失累加起来 第1批次的平均损失 + 第2批次的平均损失 + ...
             total_loss += loss.item()
             batch_num += 1
+            log_loss += loss.item()
+            log_batch_num += 1
+
+        # 计算本轮训练的平均损失和时间
+        avg_loss = total_loss / batch_num
+        time_cost = time.time() - start_time
+
         # 至此，本轮训练结束，打印训练信息
-        print(f"第{epoch + 1}轮\t\ttime:{time.time() - start_time:.2f}\t\t损失值：{total_loss / batch_num:.6f}")
+        epoch_info = f"第{epoch + 1}轮\t\ttime:{time_cost:.2f}\t\t损失值：{avg_loss:.2f}"
+        print(epoch_info)
+
+        # 每100轮记录一次详细日志
+        if (epoch + 1) % 100 == 0:
+            detailed_info = f"=== 详细记录 === 当前轮数: {epoch + 1}的前100轮的平均损失值: {log_loss / log_batch_num:.2f}, 平均耗时: {time.time() - log_start_time:.2f}秒"
+            # 重置日志损失值和批次数和开始时间
+            log_loss = 0.0
+            log_batch_num = 0
+            log_start_time = time.time()
+            log_message(detailed_info)
+
+    # 记录模型完成
+    model_info = f"模型训练完成: CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}"
+    log_message(model_info)
 
     # 多轮训练结束，保存模型（参数） 后缀名用:pth,pkl,pickle即可
     # 参1：模型对象的参数（权重矩阵，偏置矩阵） 参2：模型保存的文件名
-    torch.save(vae.state_dict(),
-               f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth")
+    model_path = f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth"
+    torch.save(vae.state_dict(), model_path)
+    log_message(f"模型已保存到: {model_path}")
 
 
 def evaluate(args, test_dataset):
@@ -90,9 +135,8 @@ def evaluate(args, test_dataset):
         dataset=test_dataset, batch_size=args.batch_size, shuffle=True)
 
     # 加载模型参数
-    vae.load_state_dict(torch.load(
-        f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth",
-        weights_only=True))
+    model_path = f"./model/CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}.pth"
+    vae.load_state_dict(torch.load(model_path, weights_only=True))
     # 3、切换模型（状态）
     vae.eval()
 
@@ -124,10 +168,10 @@ def evaluate(args, test_dataset):
     avg_mse = total_mse / total_samples
 
     # 打印结果
-    print(f"测试结果:")
-    print(f"平均绝对误差 (MAE): {avg_mae:.6f}")
-    print(f"均方误差 (MSE): {avg_mse:.6f}")
-    print(f"均方根误差 (RMSE): {avg_mse ** 0.5:.6f}")
+    log_message(f"测试结果:")
+    log_message(f"平均绝对误差 (MAE): {avg_mae:.6f}")
+    log_message(f"均方误差 (MSE): {avg_mse:.6f}")
+    log_message(f"均方根误差 (RMSE): {avg_mse ** 0.5:.6f}")
 
 
 if __name__ == '__main__':
@@ -145,11 +189,11 @@ if __name__ == '__main__':
         # 6、获取命令行参数
         args = get_args(train_dict)
         # 7、输出当前的训练模型名
-        print(
-            f"当前模型：CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}")
+        model_name = f"CVAE_{args.epochs}_{args.learning_rate}_{args.batch_size}_{args.encoder_layer_sizes}_{args.latent_size}_{args.decoder_layer_sizes}"
+        log_message(f"开始训练模型：{model_name}")
         # 8、通过状态，判断当前是训练还是测试
         if state_train_test:
             train(args, train_dataset)
         else:
             evaluate(args, test_dataset)
-    print("所有模型训练已完成") if state_train_test else print("所有模型测试已完成")
+    log_message("所有模型训练已完成") if state_train_test else log_message("所有模型测试已完成")
